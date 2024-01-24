@@ -1,0 +1,111 @@
+<%- include('header', { title: 'Advanced Programming Graph LOGIN PAGE' }) %>
+
+<section id="email-dashboard">
+    <header class="py-1 bg-primary border-bottom mb-3">
+        <div class="container d-flex justify-content-between text-light">
+            <span><i class="fa fa-user me-2"></i>Welcome, <strong>User Name</strong></span>
+            <a href="/logout" class="btn btn-dark"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </header>
+
+    <div class="container container-dashboard">
+        <div class="row">
+            <!-- Email Categories -->
+            <div class="col-md-2">
+                <h5>Categories</h5>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard?folder=inbox">Inbox</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard?folder=sentitems">Sent</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard?folder=drafts">Draft</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard?folder=outbox">Outbox</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard?folder=scheduled">Scheduled</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard?folder=junkemail">Spam</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard?folder=deleteditems">Deleted</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard?folder=archive">Archive</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Email List -->
+            <div class="col-md-4">
+                <div class="list-group">
+                    <h5 class="text-center">Email List</h5>
+                    <% if(emails && emails.length > 0) { %>
+                        <% emails.forEach(function(email, index) { %>
+                            <a href="#" class="list-group-item list-group-item-action email-item" data-id="<%= email.id %>">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1"><%= email.subject %></h6>
+                                    <small><%= email.receivedDateTime %></small>
+                                </div>
+                                <p class="mb-1"><%= email.bodyPreview %></p>
+                                <% if(email.from && email.from.emailAddress) { %>
+                                    <small>From: <%= email.from.emailAddress.name %></small>
+                                <% } else { %>
+                                    <small>From: Unknown</small>
+                                <% } %>
+                            </a>
+                        <% }); %>
+                    <% } else { %>
+                        <p>Emails empty</p>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Email Details -->
+            <div class="col-md-6">
+                <h5 class="text-center">Email details</h5>
+                <div id="email-content" class="border p-3">
+                    <!-- Email details will be shown here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<%- include('footer') %>
+
+<script>
+    $(document).ready(function() {
+        $('.email-item').click(function() {
+            var emailId = $(this).data('id');
+
+            // use ajax to connect to my server side to fetch the email by id
+            $.ajax({
+                url: '/fetch-email/' + emailId, // API endpoint in your server
+                method: 'GET',
+                success: function(response) {
+                    // Display the email details
+                    $('#email-content').html(`
+                        <h4>${response.subject}</h4>
+                        <p><strong>From:</strong> ${response.from.emailAddress.name}</p>
+                        <p><strong>Received:</strong> ${response.receivedDateTime}</p>
+                        <p>${response.body.content}</p>
+                    `).show();
+                },
+                error: function(err) {
+                    console.error('Error fetching email:', err);
+                }
+            });
+        });
+    });
+</script>
+
+</body>
+</html>
+

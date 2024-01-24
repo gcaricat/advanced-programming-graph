@@ -18,3 +18,4 @@ fetch('/config')
     .catch(error => {
         console.error('Error fetching configuration:', error);
     });
+

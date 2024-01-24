@@ -31,6 +31,7 @@ const cca = new msal.ConfidentialClientApplication(msalConfig);
 router.get('/auth', async (req, res) => {
 
     const authCode = req.query.code;
+    console.log(authCode)
 
     if (!authCode) {
         res.send("No authorization code received.");
@@ -62,9 +63,13 @@ router.get('/auth', async (req, res) => {
 router.get('/dashboard', async (req, res) => {
     if (!req.session.isLoggedIn) {
         res.redirect('/login')
+        //res.render('login')
         //res.send("Access denied. Please login first");
         return;
     }
+
+    const emailFolder = req.query.folder || 'inbox';
+    const emailFolderPath = `/me/mailFolders/${emailFolder}/messages`;
 
     const client = graph.Client.init({
         authProvider: (done) => {
@@ -72,25 +77,44 @@ router.get('/dashboard', async (req, res) => {
         }
     });
 
-    try {
-        // Fetch emails from the user's mailbox
-        const result = await client
-            .api('/me/messages')
-            .top(10) // Get the top 10 emails for example
-            .select('subject,from,receivedDateTime,bodyPreview')
-            .orderby('receivedDateTime DESC')
-            .get();
-        console.log(result)
-       // res.render('dashboard', { emails: result.value });
-    } catch (error) {
-        console.error(error);
-        res.status(500).send("Error fetching emails");
+     try {
+         // Fetch emails from the user's mailbox
+         const result = await client
+             .api(emailFolderPath)
+             .top(20) // Get the top 10 emails for example
+             .select('subject,from,receivedDateTime,bodyPreview')
+             .orderby('receivedDateTime DESC')
+             .get();
+         //console.log(result.value)
+         res.render('dashboard', {
+             emails: result.value,
+             currentFolder: emailFolder,
+             username: req.session.username
+         });
+     } catch (error) {
+         console.error(error);
+         res.render('dashboard', {
+             emails: [],
+             currentFolder: emailFolder,
+             username: req.session.username
+         });
+         //res.status(500).send("Error fetching emails");
     }
 
-    res.render(
-        'dashboard',
-        {username: req.session.username}
-    )
+    // res.render(
+    //     'dashboard',
+    //     {username: req.session.username}
+    // )
+});
+
+router.get('/login', async (req, res) => {
+    if (!req.session.isLoggedIn) {
+        res.render('login');
+        return;
+    }
+
+    res.reload('dashboard');
+    return;
 });
 
 router.get('/logout', (req, res) => {
@@ -98,6 +122,41 @@ router.get('/logout', (req, res) => {
     res.redirect('/'); // or to login page
 });
 
+router.get('/', async (req, res) => {
+    if (!req.session.isLoggedIn) {
+        res.redirect('login');
+        return;
+    }
+
+    res.redirect('dashboard');
+    return;
+});
+
+router.get('/fetch-email/:emailId', async (req, res) => {
+    if (!req.session.isLoggedIn) {
+        return res.status(401).send('Unauthorized');
+    }
+
+    const emailId = req.params.emailId;
+    const accessToken = req.session.accessToken;
+
+    const client = graph.Client.init({
+        authProvider: (done) => {
+            done(null, accessToken);
+        }
+    });
+
+    try {
+        const emailDetails = await client
+            .api(`/me/messages/${emailId}`)
+            .get();
+
+        res.json(emailDetails);
+    } catch (error) {
+        console.error('Error fetching email details:', error);
+        res.status(500).send('Error fetching email details');
+    }
+});
 
 
 /*
