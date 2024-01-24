@@ -1,0 +1,32 @@
+.btn-color{
+    background-color: #1167f8;
+    color: #fff;
+
+}
+
+.btn-color:hover{
+    background-color: #000000;
+    color: #fff;
+}
+
+.profile-image-pic{
+    height: 200px;
+    width: 200px;
+    object-fit: cover;
+}
+
+
+
+.cardbody-color{
+    background-color: #ebf2fa;
+}
+
+a{
+    text-decoration: none;
+}
+
+/** EMAIL **/
+
+.container-dashboard {
+
+}
