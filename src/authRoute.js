@@ -14,8 +14,6 @@ router.get('/config', (req, res) => {
     });
 });
 
-
-
 const msalConfig = {
   auth: {
       clientId: process.env.CLIENT_ID,
@@ -26,12 +24,9 @@ const msalConfig = {
 
 const cca = new msal.ConfidentialClientApplication(msalConfig);
 
-
-
 router.get('/auth', async (req, res) => {
 
     const authCode = req.query.code;
-    console.log(authCode)
 
     if (!authCode) {
         res.send("No authorization code received.");
@@ -45,26 +40,26 @@ router.get('/auth', async (req, res) => {
     };
 
     cca.acquireTokenByCode(tokenRequest).then(response => {
-        console.log("\nResponse: \n:", response);
+        console.log("\nResponse: \n:", response.account);
         req.session.isLoggedIn = true;
         req.session.userId = response.account.homeAccountId;
         req.session.accessToken = response.accessToken;
+        req.session.username = response.account.preferred_username;
+        req.session.name = response.account.name;
+        req.session.email = response.idTokenClaims.email;
 
         res.redirect('/dashboard');
-        //res.status(200).json(response);
     }).catch(error => {
         console.error(error);
         res.status(500).send("Error acquiring token");
     });
 
-
 })
 
 router.get('/dashboard', async (req, res) => {
+
     if (!req.session.isLoggedIn) {
         res.redirect('/login')
-        //res.render('login')
-        //res.send("Access denied. Please login first");
         return;
     }
 
@@ -81,30 +76,66 @@ router.get('/dashboard', async (req, res) => {
          // Fetch emails from the user's mailbox
          const result = await client
              .api(emailFolderPath)
-             .top(20) // Get the top 10 emails for example
+             .top(10) // Get the top 10 emails
              .select('subject,from,receivedDateTime,bodyPreview')
              .orderby('receivedDateTime DESC')
              .get();
-         //console.log(result.value)
+
+         const nextLink = result['@odata.nextLink'];
+
          res.render('dashboard', {
              emails: result.value,
              currentFolder: emailFolder,
-             username: req.session.username
+             currentUserName: req.session.name,
+             currentEmail: req.session.email,
+             isCurrentFolder: isCurrentFolder,
+             nextLink: nextLink,
+             formatDisplayDateTimeList: formatDisplayDateTimeList
          });
      } catch (error) {
-         console.error(error);
          res.render('dashboard', {
              emails: [],
              currentFolder: emailFolder,
-             username: req.session.username
+             username: req.session.username,
+             currentUserName: req.session.name,
+             currentEmail: req.session.email,
+             isCurrentFolder: isCurrentFolder,
+             formatDisplayDateTimeList: formatDisplayDateTimeList
          });
-         //res.status(500).send("Error fetching emails");
+    }
+});
+
+router.get('/load-more-emails', async (req, res) => {
+    if (!req.session.isLoggedIn) {
+        return res.status(401).send('Unauthorized');
     }
 
-    // res.render(
-    //     'dashboard',
-    //     {username: req.session.username}
-    // )
+    let nextLink = req.query.nextLink;
+    nextLink = nextLink.replace(/&#39;/g, "'")
+        .replace(/&amp;/g, "&");
+
+    const client = graph.Client.init({
+        authProvider: (done) => {
+            done(null, req.session.accessToken); // Provide the access token here
+        }
+    });
+
+    try {
+        const result = await client
+            .api(nextLink) // Use the nextLink to fetch more emails
+            .get();
+
+        result.value.forEach(email => {
+            email.formattedDateTime = formatDisplayDateTimeList(email.receivedDateTime);
+        });
+
+        res.json({
+            emails: result.value,
+            nextLink: result['@odata.nextLink']
+        });
+    } catch (error) {
+        res.status(500).send('Error loading more emails');
+    }
 });
 
 router.get('/login', async (req, res) => {
@@ -112,7 +143,6 @@ router.get('/login', async (req, res) => {
         res.render('login');
         return;
     }
-
     res.reload('dashboard');
     return;
 });
@@ -120,16 +150,6 @@ router.get('/login', async (req, res) => {
 router.get('/logout', (req, res) => {
     req.session.destroy();
     res.redirect('/'); // or to login page
-});
-
-router.get('/', async (req, res) => {
-    if (!req.session.isLoggedIn) {
-        res.redirect('login');
-        return;
-    }
-
-    res.redirect('dashboard');
-    return;
 });
 
 router.get('/fetch-email/:emailId', async (req, res) => {
@@ -158,23 +178,30 @@ router.get('/fetch-email/:emailId', async (req, res) => {
     }
 });
 
-
-/*
-
-
-router.get('/auth', (req, res) => {
-   const authCode = req.query.code;
-
-   if (!authCode) {
-       res.send("No authorization code received.");
-       return;
-   }
-
-    console.log("Authorization Code:", authCode);
-    res.send("Authorization Code received, proceed to exchange it for a token.");
-
+router.get('/', async (req, res) => {
+    if (!req.session.isLoggedIn) {
+        res.redirect('login');
+        return;
+    }
+    res.redirect('dashboard');
+    return;
 });
 
-*/
+function isCurrentFolder(folderPrimary, currentFolder) {
+    return currentFolder === folderPrimary ? 'active' : '';
+}
+
+function formatDisplayDateTimeList(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+
+    if (date > oneMonthAgo) {
+        // Format as 'dayName dayNumber'
+        return date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+    } else {
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'numeric', day: 'numeric' });
+    }
+}
 
 module.exports = router;

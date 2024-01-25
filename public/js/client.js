@@ -7,12 +7,8 @@ fetch('/config')
             const clientId = config.clientId;
             const redirectUri = encodeURIComponent(config.redirectUri);
             const scope = encodeURIComponent(config.scope);
-
-            console.log("clientId", clientId);
-
             const authUrl = `http://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&response_mode=query`;
             window.location.href = authUrl;
-
         });
     })
     .catch(error => {

@@ -15,8 +15,6 @@
     object-fit: cover;
 }
 
-
-
 .cardbody-color{
     background-color: #ebf2fa;
 }
@@ -27,6 +25,63 @@ a{
 
 /** EMAIL **/
 
-.container-dashboard {
+#email-dashboard {
+    background-color: #f6f6f6;
+}
 
+#email-dashboard .container-dashboard{
+    border: 1px solid #dee2e6;
+    padding: 30px 20px;
+}
+
+.card.card-title h5{
+    text-align: center;
+    text-transform: uppercase;
+}
+
+#navigation-categories{border: 1px solid #dee2e6}
+
+#navigation-categories .nav-item {
+    border-bottom: 1px solid #dbdcdd;
+}
+
+.nav-link {
+    color: #000;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.nav-link:hover,
+.nav-link.active{
+    background-color: #cfe4fa;
+    color: #007bff;
+}
+
+.nav-link.active {
+    font-weight: bold;
+}
+
+.detail-email-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    text-align: center;
+}
+
+.detail-email-empty i {
+    color: #007bff;
+    padding: 30px;
+    border: 1px solid #007bff;
+    border-radius: 50%;
+}
+
+.detail-email-empty h5 {
+    margin-top: 10px;
+    color: #007bff;
+}
+
+#container-email-list .email-item:hover,
+#container-email-list .email-item.is-active{
+    background-color: #cfe4fa;
 }

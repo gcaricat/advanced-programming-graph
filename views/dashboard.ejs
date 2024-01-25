@@ -3,7 +3,7 @@
 <section id="email-dashboard">
     <header class="py-1 bg-primary border-bottom mb-3">
         <div class="container d-flex justify-content-between text-light">
-            <span><i class="fa fa-user me-2"></i>Welcome, <strong>User Name</strong></span>
+            <span><i class="fa fa-user me-2"></i>Welcome, <strong><%= currentUserName %> - <%= currentEmail %></strong></span>
             <a href="/logout" class="btn btn-dark"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </div>
     </header>
@@ -12,65 +12,80 @@
         <div class="row">
             <!-- Email Categories -->
             <div class="col-md-2">
-                <h5>Categories</h5>
-                <ul class="nav flex-column">
+                <div class="card card-title pt-1 pb-1">
+                    <h5>Categories</h5>
+                </div>
+                <ul id="navigation-categories" class="nav flex-column">
                     <li class="nav-item">
-                        <a class="nav-link active" href="/dashboard?folder=inbox">Inbox</a>
+                        <a class="nav-link <%= isCurrentFolder(currentFolder, 'inbox') %>" href="/dashboard?folder=inbox"><i class="fa fa-envelope"></i> Inbox</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="/dashboard?folder=sentitems">Sent</a>
+                        <a class="nav-link  <%= isCurrentFolder(currentFolder, 'sentitems') %>" href="/dashboard?folder=sentitems"><i class="fa fa-paper-plane"></i> Sent</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="/dashboard?folder=drafts">Draft</a>
+                        <a class="nav-link <%= isCurrentFolder(currentFolder, 'drafts') %>" href="/dashboard?folder=drafts"><i class="fa fa-pen"></i> Draft</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="/dashboard?folder=outbox">Outbox</a>
+                        <a class="nav-link <%= isCurrentFolder(currentFolder, 'outbox') %>" href="/dashboard?folder=outbox"><i class="fa fa-truck-fast"></i> Outbox</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="/dashboard?folder=scheduled">Scheduled</a>
+                        <a class="nav-link <%= isCurrentFolder(currentFolder, 'scheduled') %>" href="/dashboard?folder=scheduled"><i class="fa fa-calendar"></i> Scheduled</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="/dashboard?folder=junkemail">Spam</a>
+                        <a class="nav-link <%= isCurrentFolder(currentFolder, 'junkemail') %>" href="/dashboard?folder=junkemail"><i class="fa fa-ban"></i> Spam</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="/dashboard?folder=deleteditems">Deleted</a>
+                        <a class="nav-link <%= isCurrentFolder(currentFolder, 'deleteditems') %>" href="/dashboard?folder=deleteditems"><i class="fa-regular fa-trash-can"></i> Deleted</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="/dashboard?folder=archive">Archive</a>
+                        <a class="nav-link <%= isCurrentFolder(currentFolder, 'archive') %>" href="/dashboard?folder=archive"><i class="fa-solid fa-box-archive"></i> Archive</a>
                     </li>
                 </ul>
             </div>
 
             <!-- Email List -->
-            <div class="col-md-4">
+            <div class="col-md-5">
                 <div class="list-group">
-                    <h5 class="text-center">Email List</h5>
-                    <% if(emails && emails.length > 0) { %>
-                        <% emails.forEach(function(email, index) { %>
-                            <a href="#" class="list-group-item list-group-item-action email-item" data-id="<%= email.id %>">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1"><%= email.subject %></h6>
-                                    <small><%= email.receivedDateTime %></small>
-                                </div>
-                                <p class="mb-1"><%= email.bodyPreview %></p>
-                                <% if(email.from && email.from.emailAddress) { %>
-                                    <small>From: <%= email.from.emailAddress.name %></small>
-                                <% } else { %>
-                                    <small>From: Unknown</small>
-                                <% } %>
-                            </a>
-                        <% }); %>
-                    <% } else { %>
-                        <p>Emails empty</p>
-                    <% } %>
+                    <div class="card card-title pt-1 pb-1">
+                        <h5 class="text-center">Email List</h5>
+                    </div>
+                    <div id="container-email-list">
+                        <% if(emails && emails.length > 0) { %>
+                            <% emails.forEach(function(email, index) { %>
+                                <a href="#" class="list-group-item list-group-item-action email-item" data-id="<%= email.id %>">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1"><%= email.subject %></h6>
+                                        <small><%= formatDisplayDateTimeList(email.receivedDateTime) %></small>
+                                    </div>
+                                    <p class="mb-1"><%= email.bodyPreview %></p>
+                                    <% if(email.from && email.from.emailAddress) { %>
+                                        <small>From: <%= email.from.emailAddress.name %></small>
+                                    <% } else { %>
+                                        <small>From: Unknown</small>
+                                    <% } %>
+                                </a>
+                            <% }); %>
+                        <% } else { %>
+                            <p class="text-center text-secondary fw-semibold">We are sorry but the <span class="text-primary"><%= currentFolder %></span> email folder is empty</p>
+                        <% } %>
+                    </div>
+                    <button id="load-more-emails" class="btn btn-color btn-lg px-5 mb-3 mt-3 w-100" style="display: <%= (typeof nextLink !== "undefined" && nextLink) ? 'block' : 'none' %>; ">Load More Emails</button>
+
+
                 </div>
             </div>
 
             <!-- Email Details -->
-            <div class="col-md-6">
-                <h5 class="text-center">Email details</h5>
+            <div class="col-md-5">
+                <div class="card card-title pt-1 pb-1">
+                    <h5 class="text-center">Email Details</h5>
+                </div>
                 <div id="email-content" class="border p-3">
-                    <!-- Email details will be shown here -->
+                    <div class="detail-email-empty">
+                        <i class="fa fa-envelope fa-3x"></i>
+                        <h5>Select an email to read</h5>
+                    </div>
+                    <iframe id="email-frame" style="width: 100%; height: 600px; border: none;"></iframe>
                 </div>
             </div>
         </div>
@@ -82,20 +97,72 @@
 
 <script>
     $(document).ready(function() {
+        createEmailDetails();
+        loadMoreEmail();
+
+    });
+
+    function loadMoreEmail() {
+        $('#load-more-emails').click(function() {
+            $.ajax({
+                url: '/load-more-emails',
+                method: 'GET',
+                data: { nextLink: '<%= nextLink %>' },
+                success: function(response) {
+                    response.emails.forEach(function(email) {
+                        let emailItem = `
+                                    <a href="#" class="list-group-item list-group-item-action email-item" data-id="${email.id}">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">${email.subject}</h6>
+                                            <small>${email.formattedDateTime}</small>
+                                        </div>
+                                        <p class="mb-1">${email.bodyPreview}</p>
+                                        <small>From: ${email.from && email.from.emailAddress ? email.from.emailAddress.name : 'Unknown'}</small>
+                                    </a>`;
+                        $('#container-email-list').append(emailItem);
+                    });
+                    if (response.nextLink) {
+                        $('#load-more-emails').show().data('nextLink', response.nextLink);
+                        createEmailDetails();
+                    } else {
+                        $('#load-more-emails').hide();
+                    }
+                },
+                error: function(err) {
+                    console.error('Error loading more emails:', err);
+                }
+            });
+        });
+    }
+
+    function createEmailDetails() {
         $('.email-item').click(function() {
             var emailId = $(this).data('id');
+            $('.email-item').removeClass('is-active');
+            $(this).addClass('is-active');
 
-            // use ajax to connect to my server side to fetch the email by id
             $.ajax({
                 url: '/fetch-email/' + emailId, // API endpoint in your server
                 method: 'GET',
                 success: function(response) {
                     // Display the email details
-                    $('#email-content').html(`
+                    $('.detail-email-empty').slideDown();
+                    $('#email-content').html('<iframe id="email-frame" style="width: 100%; height: 600px; border: none;"></iframe>');
+                    var iframe = document.getElementById('email-frame');
+
+                    var doc = iframe.contentWindow.document;
+                    doc.open();
+                    doc.write('<html><head><title>Email Content</title></head><body>');
+                    doc.write(response.body.content);
+                    doc.write('</body></html>');
+                    doc.close();
+
+                    // Display the email details above the iframe
+                    $('#email-content').prepend(`
                         <h4>${response.subject}</h4>
                         <p><strong>From:</strong> ${response.from.emailAddress.name}</p>
                         <p><strong>Received:</strong> ${response.receivedDateTime}</p>
-                        <p>${response.body.content}</p>
+                        <hr>
                     `).show();
                 },
                 error: function(err) {
@@ -103,7 +170,8 @@
                 }
             });
         });
-    });
+    }
+
 </script>
 
 </body>
